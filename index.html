@@ -1,10 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<title>Mi primera web</title>
+    <meta charset="UTF-8">
+    <title>Buscador de cartas Pokemon</title>
 </head>
+
 <body>
-<h1>Hola mundo</h1>
-<p>Esta es mi página web en GitHub.</p>
+
+    <h1>Buscador de cartas Pokemon</h1>
+
+    <input type="text" id="nombre" placeholder="Ejemplo: Pikachu">
+    <button type="button" onclick="buscarCarta()">Buscar</button>
+
+    <div id="resultado"></div>
+
+    <script>
+        async function buscarCarta() {
+            const nombre = document.getElementById("nombre").value.trim();
+            const resultado = document.getElementById("resultado");
+
+            if (nombre === "") {
+                resultado.innerHTML = "<p>Escribe el nombre de una carta.</p>";
+                return;
+            }
+
+            resultado.innerHTML = "<p>Buscando...</p>";
+
+            try {
+                const consulta = encodeURIComponent("name:" + nombre);
+                const url = "https://api.pokemontcg.io/v2/cards?q=" + consulta + "&pageSize=1";
+
+                const respuesta = await fetch(url);
+
+                if (!respuesta.ok) {
+                    throw new Error("Error al consultar la API");
+                }
+
+                const datos = await respuesta.json();
+
+                if (datos.data.length === 0) {
+                    resultado.innerHTML = "<p>No se ha encontrado la carta.</p>";
+                    return;
+                }
+
+                const carta = datos.data[0];
+
+                resultado.innerHTML =
+                    "<h2>" + carta.name + "</h2>" +
+                    "<img src='" + carta.images.large + "' width='300' alt='Imagen de la carta'>" +
+                    "<p>Coleccion: " + carta.set.name + "</p>" +
+                    "<p>Numero: " + carta.number + "</p>" +
+                    "<p>Rareza: " + (carta.rarity || "No disponible") + "</p>";
+
+            } catch (error) {
+                resultado.innerHTML =
+                    "<p>Error: no se pudo realizar la busqueda.</p>";
+
+                console.log(error);
+            }
+        }
+    </script>
+
 </body>
 </html>
