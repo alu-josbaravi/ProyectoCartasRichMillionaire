@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Buscador de cartas Pokemon</title>
+    <title>Buscador de cartas Pokémon</title>
     <link rel="stylesheet" href="Frontend/CSS/Index.css">
 </head>
 
@@ -11,79 +11,166 @@
     <h1>Buscador de cartas Pokémon</h1>
 
     <input type="text" id="nombre" placeholder="Ejemplo: Pikachu">
-    <button type="button" onclick="buscarCarta()">Buscar</button>
+    <button onclick="buscarCarta()">Buscar</button>
 
     <div id="resultado"></div>
 
+    <div id="paginacion">
+        <button onclick="paginaAnterior()">⬅ Anterior</button>
+        <span id="infoPagina"></span>
+        <button onclick="paginaSiguiente()">Siguiente ➡</button>
+    </div>
+
     <script>
-        async function buscarCarta() {
 
-            const nombre = document.getElementById("nombre").value.trim();
-            const resultado = document.getElementById("resultado");
+    let paginaActual = 1;
+    let totalPaginas = 1;
+    let ultimoPokemon = "";
+    let buscando = false;
 
-            if (nombre === "") {
-                resultado.innerHTML = "<p>Escribe el nombre de una carta.</p>";
+    async function buscarCarta() {
+
+        if (buscando) {
+            return;
+        }
+
+        const nombre = document.getElementById("nombre").value.trim();
+        const resultado = document.getElementById("resultado");
+        const boton = document.querySelector("button");
+
+        if (nombre === "") {
+            resultado.innerHTML = "<p>Escribe el nombre de una carta.</p>";
+            return;
+        }
+
+        if (nombre !== ultimoPokemon) {
+            paginaActual = 1;
+            ultimoPokemon = nombre;
+        }
+
+        buscando = true;
+        boton.disabled = true;
+
+        resultado.innerHTML = "<p>Cargando cartas...</p>";
+
+        try {
+
+            const consulta = encodeURIComponent(`name:"${nombre}"`);
+
+            const url =
+                "https://api.pokemontcg.io/v2/cards?q=" +
+                consulta +
+                "&pageSize=20&page=" +
+                paginaActual;
+
+            let respuesta;
+            let intentos = 3;
+
+            for (let i = 0; i < intentos; i++) {
+
+                try {
+
+                    const controller = new AbortController();
+
+                    setTimeout(() => {
+                        controller.abort();
+                    }, 5000);
+
+                    respuesta = await fetch(url, {
+                        signal: controller.signal
+                    });
+
+                    if (respuesta.ok) {
+                        break;
+                    }
+
+                } catch (e) {}
+
+                await new Promise(resolve =>
+                    setTimeout(resolve, 1000)
+                );
+            }
+
+            if (!respuesta || !respuesta.ok) {
+                throw new Error("No se pudo conectar con la API");
+            }
+
+            const datos = await respuesta.json();
+
+            if (!datos.data || datos.data.length === 0) {
+                resultado.innerHTML =
+                    "<p>No se encontraron cartas.</p>";
                 return;
             }
 
-            resultado.innerHTML = "<p>Buscando...</p>";
+            totalPaginas = Math.ceil(
+                datos.totalCount / datos.pageSize
+            );
 
-            try {
+            let html = "";
 
-                const consulta = encodeURIComponent(`name:"${nombre}"`);
+            datos.data.forEach(carta => {
 
-                const url =
-                    "https://api.pokemontcg.io/v2/cards?q=" +
-                    consulta +
-                    "&pageSize=20";
+                html += `
+                    <div class="carta">
 
-                const respuesta = await fetch(url);
+                        <h2>${carta.name}</h2>
 
-                if (!respuesta.ok) {
-                    throw new Error("Error al consultar la API");
-                }
+                        <img src="${carta.images.small}"
+                             alt="${carta.name}">
 
-                const datos = await respuesta.json();
+                        <p><b>Colección:</b> ${carta.set.name}</p>
 
-                if (datos.data.length === 0) {
-                    resultado.innerHTML = "<p>No se ha encontrado la carta.</p>";
-                    return;
-                }
+                        <p><b>Fecha:</b> ${carta.set.releaseDate}</p>
 
-                let html = "";
+                        <p><b>Número:</b> ${carta.number}</p>
 
-                datos.data.forEach(carta => {
+                        <p><b>Rareza:</b> ${carta.rarity || "No disponible"}</p>
 
-                    html += `
-                        <div class="carta">
-                            <h2>${carta.name}</h2>
-                            
-                            <img src="${carta.images.small}" 
-                                 alt="${carta.name}">
-                            
-                            <p><strong>Colección:</strong> ${carta.set.name}</p>
-                            
-                            <p><strong>Fecha:</strong> ${carta.set.releaseDate}</p>
-                            
-                            <p><strong>Número:</strong> ${carta.number}</p>
-                            
-                            <p><strong>Rareza:</strong> ${carta.rarity || "No disponible"}</p>
-                            
-                        </div>
-                    `;
-                });
+                    </div>
+                `;
+            });
 
-                resultado.innerHTML = html;
+            resultado.innerHTML = html;
 
-            } catch (error) {
+            document.getElementById("infoPagina").innerHTML =
+                `Página ${paginaActual} de ${totalPaginas}`;
 
-                resultado.innerHTML =
-                    "<p>Error: no se pudo realizar la búsqueda.</p>";
+            document.getElementById("paginacion").style.display = "block";
 
-                console.log(error);
-            }
+        } catch (error) {
+
+            resultado.innerHTML =
+                "<p>Error al realizar la búsqueda.</p>";
+
+            console.error(error);
+
+        } finally {
+
+            buscando = false;
+            boton.disabled = false;
+
         }
-    </script>
+    }
+
+    function paginaSiguiente() {
+
+        if (paginaActual < totalPaginas) {
+            paginaActual++;
+            buscarCarta();
+        }
+    }
+
+    function paginaAnterior() {
+
+        if (paginaActual > 1) {
+            paginaActual--;
+            buscarCarta();
+        }
+    }
+
+</script>
+
 
 </body>
 </html>
