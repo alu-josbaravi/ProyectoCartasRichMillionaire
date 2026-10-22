@@ -2,175 +2,243 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscador de cartas Pokémon</title>
     <link rel="stylesheet" href="Frontend/CSS/Index.css">
 </head>
-
 <body>
+    <header class="cabecera">
+        <h1>Buscador de cartas Pokémon</h1>
+        <p>Busca un Pokémon y pulsa sobre una carta para verla en detalle.</p>
 
-    <h1>Buscador de cartas Pokémon</h1>
+        <form id="formularioBusqueda" class="buscador">
+            <label for="nombre" class="oculto">Nombre del Pokémon</label>
+            <input type="search" id="nombre" placeholder="Ejemplo: Pikachu" autocomplete="off">
+            <button type="submit" id="botonBuscar">Buscar</button>
+        </form>
+    </header>
 
-    <input type="text" id="nombre" placeholder="Ejemplo: Pikachu">
-    <button onclick="buscarCarta()">Buscar</button>
+    <main>
+        <div id="estado" aria-live="polite"></div>
+        <section id="resultado" aria-label="Resultados de la búsqueda"></section>
 
-    <div id="resultado"></div>
+        <nav id="paginacion" aria-label="Paginación">
+            <button type="button" id="botonAnterior">← Anterior</button>
+            <span id="infoPagina"></span>
+            <button type="button" id="botonSiguiente">Siguiente →</button>
+        </nav>
+    </main>
 
-    <div id="paginacion">
-        <button onclick="paginaAnterior()">⬅ Anterior</button>
-        <span id="infoPagina"></span>
-        <button onclick="paginaSiguiente()">Siguiente ➡</button>
+    <div id="modalCarta" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalNombre">
+        <div class="modal-contenido">
+            <button type="button" id="cerrarModal" class="cerrar" aria-label="Cerrar detalle">×</button>
+            <img id="modalImagen" src="" alt="">
+            <div class="modal-datos">
+                <h2 id="modalNombre"></h2>
+                <p><strong>Colección:</strong> <span id="modalColeccion"></span></p>
+                <p><strong>Fecha:</strong> <span id="modalFecha"></span></p>
+                <p><strong>Número:</strong> <span id="modalNumero"></span></p>
+                <p><strong>Rareza:</strong> <span id="modalRareza"></span></p>
+                <p><strong>Tipo:</strong> <span id="modalTipo"></span></p>
+                <p><strong>HP:</strong> <span id="modalHp"></span></p>
+                <p><strong>Artista:</strong> <span id="modalArtista"></span></p>
+            </div>
+        </div>
     </div>
 
     <script>
+        let paginaActual = 1;
+        let totalPaginas = 1;
+        let ultimoPokemon = "";
+        let buscando = false;
+        let cartasActuales = [];
 
-    let paginaActual = 1;
-    let totalPaginas = 1;
-    let ultimoPokemon = "";
-    let buscando = false;
-
-    async function buscarCarta() {
-
-        if (buscando) {
-            return;
-        }
-
-        const nombre = document.getElementById("nombre").value.trim();
+        const formulario = document.getElementById("formularioBusqueda");
+        const nombreInput = document.getElementById("nombre");
+        const botonBuscar = document.getElementById("botonBuscar");
         const resultado = document.getElementById("resultado");
-        const boton = document.querySelector("button");
+        const estado = document.getElementById("estado");
+        const paginacion = document.getElementById("paginacion");
+        const botonAnterior = document.getElementById("botonAnterior");
+        const botonSiguiente = document.getElementById("botonSiguiente");
+        const modal = document.getElementById("modalCarta");
+        const cerrarModal = document.getElementById("cerrarModal");
 
-        if (nombre === "") {
-            resultado.innerHTML = "<p>Escribe el nombre de una carta.</p>";
-            return;
-        }
+        formulario.addEventListener("submit", function (evento) {
+            evento.preventDefault();
+            const nombre = nombreInput.value.trim();
 
-        if (nombre !== ultimoPokemon) {
-            paginaActual = 1;
-            ultimoPokemon = nombre;
-        }
-
-        buscando = true;
-        boton.disabled = true;
-
-        resultado.innerHTML = "<p>Cargando cartas...</p>";
-
-        try {
-
-            const consulta = encodeURIComponent(`name:"${nombre}"`);
-
-            const url =
-                "https://api.pokemontcg.io/v2/cards?q=" +
-                consulta +
-                "&pageSize=20&page=" +
-                paginaActual;
-
-            let respuesta;
-            let intentos = 3;
-
-            for (let i = 0; i < intentos; i++) {
-
-                try {
-
-                    const controller = new AbortController();
-
-                    setTimeout(() => {
-                        controller.abort();
-                    }, 5000);
-
-                    respuesta = await fetch(url, {
-                        signal: controller.signal
-                    });
-
-                    if (respuesta.ok) {
-                        break;
-                    }
-
-                } catch (e) {}
-
-                await new Promise(resolve =>
-                    setTimeout(resolve, 1000)
-                );
+            if (nombre !== ultimoPokemon) {
+                paginaActual = 1;
+                ultimoPokemon = nombre;
             }
 
-            if (!respuesta || !respuesta.ok) {
-                throw new Error("No se pudo conectar con la API");
+            buscarCarta();
+        });
+
+        botonAnterior.addEventListener("click", function () {
+            if (paginaActual > 1 && !buscando) {
+                paginaActual--;
+                buscarCarta();
+                window.scrollTo({ top: 0, behavior: "smooth" });
             }
+        });
 
-            const datos = await respuesta.json();
+        botonSiguiente.addEventListener("click", function () {
+            if (paginaActual < totalPaginas && !buscando) {
+                paginaActual++;
+                buscarCarta();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        });
 
-            if (!datos.data || datos.data.length === 0) {
-                resultado.innerHTML =
-                    "<p>No se encontraron cartas.</p>";
+        async function buscarCarta() {
+            if (buscando) return;
+
+            const nombre = nombreInput.value.trim();
+
+            if (nombre === "") {
+                estado.textContent = "Escribe el nombre de un Pokémon.";
+                resultado.innerHTML = "";
+                paginacion.style.display = "none";
+                nombreInput.focus();
                 return;
             }
 
-            totalPaginas = Math.ceil(
-                datos.totalCount / datos.pageSize
-            );
+            buscando = true;
+            botonBuscar.disabled = true;
+            botonAnterior.disabled = true;
+            botonSiguiente.disabled = true;
+            estado.innerHTML = '<span class="cargador"></span> Cargando cartas...';
+            resultado.innerHTML = "";
+            paginacion.style.display = "none";
 
-            let html = "";
+            try {
+                const consulta = encodeURIComponent(`name:"${nombre}"`);
+                const url = `https://api.pokemontcg.io/v2/cards?q=${consulta}&pageSize=20&page=${paginaActual}`;
+                const respuesta = await obtenerConReintentos(url, 3);
+                const datos = await respuesta.json();
 
-            datos.data.forEach(carta => {
+                if (!datos.data || datos.data.length === 0) {
+                    estado.textContent = "No se encontraron cartas con ese nombre.";
+                    return;
+                }
 
-                html += `
-                    <div class="carta">
+                cartasActuales = datos.data;
+                totalPaginas = Math.max(1, Math.ceil(datos.totalCount / datos.pageSize));
+                mostrarCartas();
 
-                        <h2>${carta.name}</h2>
+                estado.textContent = `${datos.totalCount} cartas encontradas`;
+                document.getElementById("infoPagina").textContent = `Página ${paginaActual} de ${totalPaginas}`;
+                botonAnterior.disabled = paginaActual === 1;
+                botonSiguiente.disabled = paginaActual === totalPaginas;
+                paginacion.style.display = "flex";
+            } catch (error) {
+                estado.textContent = "No se pudo realizar la búsqueda. Inténtalo de nuevo.";
+                console.error(error);
+            } finally {
+                buscando = false;
+                botonBuscar.disabled = false;
+            }
+        }
 
-                        <img src="${carta.images.small}"
-                             alt="${carta.name}">
+        async function obtenerConReintentos(url, intentos) {
+            let ultimoError;
 
-                        <p><b>Colección:</b> ${carta.set.name}</p>
+            for (let i = 0; i < intentos; i++) {
+                const controller = new AbortController();
+                const temporizador = setTimeout(() => controller.abort(), 8000);
 
-                        <p><b>Fecha:</b> ${carta.set.releaseDate}</p>
+                try {
+                    const respuesta = await fetch(url, { signal: controller.signal });
+                    clearTimeout(temporizador);
 
-                        <p><b>Número:</b> ${carta.number}</p>
+                    if (!respuesta.ok) throw new Error(`Error HTTP: ${respuesta.status}`);
+                    return respuesta;
+                } catch (error) {
+                    clearTimeout(temporizador);
+                    ultimoError = error;
+                    if (i < intentos - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
 
-                        <p><b>Rareza:</b> ${carta.rarity || "No disponible"}</p>
+            throw ultimoError;
+        }
 
-                    </div>
-                `;
+        function mostrarCartas() {
+            resultado.innerHTML = "";
+
+            cartasActuales.forEach(function (carta, indice) {
+                const articulo = document.createElement("article");
+                articulo.className = "carta";
+                articulo.tabIndex = 0;
+                articulo.setAttribute("role", "button");
+                articulo.setAttribute("aria-label", `Ver detalles de ${carta.name}`);
+
+                const imagen = document.createElement("img");
+                imagen.src = carta.images.small;
+                imagen.alt = `Carta ${carta.name}`;
+                imagen.loading = "lazy";
+
+                const titulo = document.createElement("h2");
+                titulo.textContent = carta.name;
+
+                const coleccion = document.createElement("p");
+                coleccion.textContent = carta.set.name;
+
+                const rareza = document.createElement("span");
+                rareza.className = "rareza";
+                rareza.textContent = carta.rarity || "Rareza no disponible";
+
+                articulo.append(imagen, titulo, coleccion, rareza);
+                articulo.addEventListener("click", () => abrirDetalle(indice));
+                articulo.addEventListener("keydown", function (evento) {
+                    if (evento.key === "Enter" || evento.key === " ") {
+                        evento.preventDefault();
+                        abrirDetalle(indice);
+                    }
+                });
+
+                resultado.appendChild(articulo);
             });
-
-            resultado.innerHTML = html;
-
-            document.getElementById("infoPagina").innerHTML =
-                `Página ${paginaActual} de ${totalPaginas}`;
-
-            document.getElementById("paginacion").style.display = "block";
-
-        } catch (error) {
-
-            resultado.innerHTML =
-                "<p>Error al realizar la búsqueda.</p>";
-
-            console.error(error);
-
-        } finally {
-
-            buscando = false;
-            boton.disabled = false;
-
         }
-    }
 
-    function paginaSiguiente() {
+        function abrirDetalle(indice) {
+            const carta = cartasActuales[indice];
+            document.getElementById("modalImagen").src = carta.images.large || carta.images.small;
+            document.getElementById("modalImagen").alt = `Carta ${carta.name} ampliada`;
+            document.getElementById("modalNombre").textContent = carta.name;
+            document.getElementById("modalColeccion").textContent = carta.set.name;
+            document.getElementById("modalFecha").textContent = carta.set.releaseDate || "No disponible";
+            document.getElementById("modalNumero").textContent = carta.number || "No disponible";
+            document.getElementById("modalRareza").textContent = carta.rarity || "No disponible";
+            document.getElementById("modalTipo").textContent = carta.types?.join(", ") || "No disponible";
+            document.getElementById("modalHp").textContent = carta.hp || "No disponible";
+            document.getElementById("modalArtista").textContent = carta.artist || "No disponible";
 
-        if (paginaActual < totalPaginas) {
-            paginaActual++;
-            buscarCarta();
+            modal.classList.add("visible");
+            modal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("sin-scroll");
+            cerrarModal.focus();
         }
-    }
 
-    function paginaAnterior() {
-
-        if (paginaActual > 1) {
-            paginaActual--;
-            buscarCarta();
+        function ocultarDetalle() {
+            modal.classList.remove("visible");
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("sin-scroll");
         }
-    }
 
-</script>
-
-
+        cerrarModal.addEventListener("click", ocultarDetalle);
+        modal.addEventListener("click", function (evento) {
+            if (evento.target === modal) ocultarDetalle();
+        });
+        document.addEventListener("keydown", function (evento) {
+            if (evento.key === "Escape" && modal.classList.contains("visible")) {
+                ocultarDetalle();
+            }
+        });
+    </script>
 </body>
 </html>
