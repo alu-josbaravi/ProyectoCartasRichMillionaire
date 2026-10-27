@@ -1,0 +1,4 @@
+const salida=document.querySelector('#resultado');
+async function enviar(url,data){salida.textContent='Enviando...';const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const json=await r.json();salida.textContent=JSON.stringify(json,null,2);if(!r.ok)throw new Error(json.mensaje);}
+document.querySelector('#usuarioForm').addEventListener('submit',async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));try{await enviar('/api/usuarios',d);e.target.reset();}catch(_){} });
+document.querySelector('#productoForm').addEventListener('submit',async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(e.target));d.precio=Number(d.precio);d.stock=Number(d.stock);d.activo=true;try{await enviar('/api/productos',d);e.target.reset();}catch(_){} });

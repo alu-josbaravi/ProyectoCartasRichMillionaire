@@ -1,0 +1,12 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: tienda_cartas
+    ports: ["3306:3306"]
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/CardTradeDB.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/inserts.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+volumes: { mysql_data: {} }
