@@ -1,6 +1,465 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CardTradeDB</title><link rel="stylesheet" href="styles.css"></head><body>
-<header><h1>CardTradeDB</h1><p>Prueba sencilla de comunicación entre el frontend, Java y MySQL.</p></header><main>
-<section><h2>Crear usuario</h2><form id="usuarioForm"><input name="usuario" placeholder="Usuario" maxlength="16" required><input name="email" type="email" placeholder="Correo" required><input name="telefono" placeholder="Teléfono"><input name="password" type="password" placeholder="Contraseña (mínimo 8)" minlength="8" required><select name="rol"><option>CLIENTE</option><option>ADMINISTRADOR</option></select><button>Guardar usuario</button></form></section>
-<section><h2>Crear producto</h2><form id="productoForm"><input name="cartaExternaId" placeholder="ID externo, por ejemplo base1-4" required><input name="idioma" value="es" required><select name="estadoCarta"><option>NUEVA</option><option>EXCELENTE</option><option>BUENA</option><option>JUGADA</option><option>DETERIORADA</option></select><select name="acabado"><option>NORMAL</option><option>HOLO</option><option>REVERSE_HOLO</option></select><input name="precio" type="number" min="0" step="0.01" placeholder="Precio" required><input name="stock" type="number" min="0" placeholder="Stock" required><button>Guardar producto</button></form></section>
-<section><h2>Exportación</h2><a class="button" href="/api/exportacion/inserts">Descargar inserts.sql actual</a><pre id="resultado">Esperando una operación...</pre></section>
-</main><script src="app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de cartas Pokemon</title>
+
+    <link rel="stylesheet" href="/Index.css">
+</head>
+<body>
+    <header class="cabecera">
+        <h1>Buscador de cartas Pokemon</h1>
+        <p>Busca un Pokemon y pulsa una carta para verla en detalle.</p>
+
+        <form id="formularioBusqueda" class="buscador">
+            <label for="nombre" class="oculto">Nombre del Pokemon</label>
+            <input type="search" id="nombre" placeholder="Ejemplo: Pikachu" autocomplete="off">
+            <button type="submit" id="botonBuscar">Buscar</button>
+        </form>
+    </header>
+
+    <main>
+        <section id="apartadoFiltros" class="apartado-filtros" aria-label="Filtros de cartas">
+            <div class="titulo-filtros">
+                <h2>Filtros</h2>
+                <button type="button" id="mostrarFiltros">Mostrar filtros</button>
+            </div>
+
+            <div id="contenidoFiltros" class="contenido-filtros">
+                <div class="grupo-filtro">
+                    <label for="filtroTipo">Tipo</label>
+                    <select id="filtroTipo">
+                        <option value="">Todos los tipos</option>
+                        <option value="Fire">Fuego</option>
+                        <option value="Water">Agua</option>
+                        <option value="Grass">Planta</option>
+                        <option value="Lightning">Electrico</option>
+                        <option value="Psychic">Psiquico</option>
+                        <option value="Fighting">Lucha</option>
+                        <option value="Darkness">Oscuridad</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Dragon">Dragon</option>
+                        <option value="Colorless">Incoloro</option>
+                        <option value="Fairy">Hada</option>
+                    </select>
+                </div>
+
+                <div class="grupo-filtro">
+                    <label for="filtroClase">Clase de carta</label>
+                    <select id="filtroClase">
+                        <option value="">Todas las clases</option>
+                        <option value="individual">Individual</option>
+                        <option value="gx">GX</option>
+                        <option value="tag-team">Pareja / TAG TEAM</option>
+                        <option value="ex">EX</option>
+                        <option value="mega">Mega</option>
+                        <option value="v">V</option>
+                        <option value="vmax">VMAX</option>
+                        <option value="vstar">VSTAR</option>
+                        <option value="basic">Basica</option>
+                        <option value="stage1">Fase 1</option>
+                        <option value="stage2">Fase 2</option>
+                    </select>
+                </div>
+
+                <div class="acciones-filtros">
+                    <button type="button" id="aplicarFiltros">Aplicar filtros</button>
+                    <button type="button" id="limpiarFiltros" class="boton-secundario">Limpiar</button>
+                </div>
+            </div>
+        </section>
+
+        <div id="estado" aria-live="polite"></div>
+        <section id="resultado" aria-label="Resultados de la busqueda"></section>
+
+        <nav id="paginacion" aria-label="Paginacion">
+            <button type="button" id="botonAnterior">Anterior</button>
+            <span id="infoPagina"></span>
+            <button type="button" id="botonSiguiente">Siguiente</button>
+        </nav>
+    </main>
+
+    <div id="modalCarta" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalNombre">
+        <div class="modal-contenido">
+            <button type="button" id="cerrarModal" class="cerrar" aria-label="Cerrar detalle">x</button>
+
+            <div id="contenedor3d" class="contenedor-3d">
+                <img id="modalImagen" src="" alt="">
+                <div class="brillo"></div>
+            </div>
+
+            <div class="modal-datos">
+                <h2 id="modalNombre"></h2>
+                <p><strong>Coleccion:</strong> <span id="modalColeccion"></span></p>
+                <p><strong>Fecha:</strong> <span id="modalFecha"></span></p>
+                <p><strong>Numero:</strong> <span id="modalNumero"></span></p>
+                <p><strong>Rareza:</strong> <span id="modalRareza"></span></p>
+                <p><strong>Tipo:</strong> <span id="modalTipo"></span></p>
+                <p><strong>HP:</strong> <span id="modalHp"></span></p>
+                <p><strong>Clase:</strong> <span id="modalClase"></span></p>
+                <p><strong>Artista:</strong> <span id="modalArtista"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let paginaActual = 1;
+        let totalPaginas = 1;
+        let ultimoPokemon = "";
+        let ultimaConfiguracionFiltros = "";
+        let buscando = false;
+        let cartasActuales = [];
+
+        const formulario = document.getElementById("formularioBusqueda");
+        const nombreInput = document.getElementById("nombre");
+        const botonBuscar = document.getElementById("botonBuscar");
+        const resultado = document.getElementById("resultado");
+        const estado = document.getElementById("estado");
+        const paginacion = document.getElementById("paginacion");
+        const botonAnterior = document.getElementById("botonAnterior");
+        const botonSiguiente = document.getElementById("botonSiguiente");
+        const infoPagina = document.getElementById("infoPagina");
+        const apartadoFiltros = document.getElementById("apartadoFiltros");
+        const filtroTipo = document.getElementById("filtroTipo");
+        const filtroClase = document.getElementById("filtroClase");
+        const aplicarFiltros = document.getElementById("aplicarFiltros");
+        const limpiarFiltros = document.getElementById("limpiarFiltros");
+        const mostrarFiltros = document.getElementById("mostrarFiltros");
+        const contenidoFiltros = document.getElementById("contenidoFiltros");
+        const modal = document.getElementById("modalCarta");
+        const cerrarModal = document.getElementById("cerrarModal");
+        const contenedor3d = document.getElementById("contenedor3d");
+        const imagen3d = document.getElementById("modalImagen");
+        const brillo = contenedor3d.querySelector(".brillo");
+
+        mostrarFiltros.addEventListener("click", function () {
+            contenidoFiltros.classList.toggle("visible");
+            mostrarFiltros.textContent = contenidoFiltros.classList.contains("visible")
+                ? "Ocultar filtros"
+                : "Mostrar filtros";
+        });
+
+        formulario.addEventListener("submit", function (evento) {
+            evento.preventDefault();
+            reiniciarPaginaSiCambiaBusqueda();
+            buscarCarta();
+        });
+
+        aplicarFiltros.addEventListener("click", function () {
+            paginaActual = 1;
+            actualizarUltimaBusqueda();
+            buscarCarta();
+        });
+
+        limpiarFiltros.addEventListener("click", function () {
+            filtroTipo.value = "";
+            filtroClase.value = "";
+            paginaActual = 1;
+            actualizarUltimaBusqueda();
+            buscarCarta();
+        });
+
+        botonAnterior.addEventListener("click", function () {
+            if (paginaActual > 1 && !buscando) {
+                paginaActual--;
+                buscarCarta();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        });
+
+        botonSiguiente.addEventListener("click", function () {
+            if (paginaActual < totalPaginas && !buscando) {
+                paginaActual++;
+                buscarCarta();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+        });
+
+        function reiniciarPaginaSiCambiaBusqueda() {
+            const nombre = nombreInput.value.trim();
+            const configuracionFiltros = filtroTipo.value + "-" + filtroClase.value;
+
+            if (
+                nombre !== ultimoPokemon ||
+                configuracionFiltros !== ultimaConfiguracionFiltros
+            ) {
+                paginaActual = 1;
+            }
+
+            ultimoPokemon = nombre;
+            ultimaConfiguracionFiltros = configuracionFiltros;
+        }
+
+        function actualizarUltimaBusqueda() {
+            ultimoPokemon = nombreInput.value.trim();
+            ultimaConfiguracionFiltros = filtroTipo.value + "-" + filtroClase.value;
+        }
+
+        function crearConsulta(nombre) {
+            const partes = [`name:"${nombre}"`];
+
+            if (filtroTipo.value) {
+                partes.push(`types:${filtroTipo.value}`);
+            }
+
+            switch (filtroClase.value) {
+                case "individual": partes.push('-subtypes:"TAG TEAM"'); break;
+                case "gx": partes.push("subtypes:GX", '-subtypes:"TAG TEAM"'); break;
+                case "tag-team": partes.push('subtypes:"TAG TEAM"'); break;
+                case "ex": partes.push("subtypes:EX"); break;
+                case "mega": partes.push("subtypes:MEGA"); break;
+                case "v": partes.push("subtypes:V"); break;
+                case "vmax": partes.push("subtypes:VMAX"); break;
+                case "vstar": partes.push("subtypes:VSTAR"); break;
+                case "basic": partes.push("subtypes:Basic"); break;
+                case "stage1": partes.push('subtypes:"Stage 1"'); break;
+                case "stage2": partes.push('subtypes:"Stage 2"'); break;
+            }
+
+            return partes.join(" ");
+        }
+
+        async function buscarCarta() {
+            if (buscando) return;
+
+            const nombre = nombreInput.value.trim();
+
+            if (!nombre) {
+                estado.textContent = "Escribe el nombre de un Pokemon.";
+                resultado.innerHTML = "";
+                paginacion.style.display = "none";
+                nombreInput.focus();
+                return;
+            }
+
+            buscando = true;
+            cartasActuales = [];
+            botonBuscar.disabled = true;
+            aplicarFiltros.disabled = true;
+            limpiarFiltros.disabled = true;
+            botonAnterior.disabled = true;
+            botonSiguiente.disabled = true;
+            estado.innerHTML = '<span class="cargador"></span> Cargando cartas...';
+            resultado.innerHTML = "";
+            paginacion.style.display = "none";
+
+            try {
+                const consulta = encodeURIComponent(crearConsulta(nombre));
+                const url = `https://api.pokemontcg.io/v2/cards?q=${consulta}&pageSize=20&page=${paginaActual}&orderBy=name`;
+                const respuesta = await obtenerConReintentos(url, 5);
+                const datos = await respuesta.json();
+
+                if (!datos.data || datos.data.length === 0) {
+                    estado.textContent = "No se encontraron cartas con esos filtros.";
+                    return;
+                }
+
+                cartasActuales = datos.data;
+                totalPaginas = Math.max(1, Math.ceil(datos.totalCount / datos.pageSize));
+                mostrarCartas();
+
+                estado.textContent = `${datos.totalCount} cartas encontradas`;
+                infoPagina.textContent = `Pagina ${paginaActual} de ${totalPaginas}`;
+                botonAnterior.disabled = paginaActual === 1;
+                botonSiguiente.disabled = paginaActual === totalPaginas;
+                paginacion.style.display = "flex";
+
+                // Los filtros solo aparecen cuando la busqueda ha dado resultados.
+                apartadoFiltros.classList.add("filtros-visibles");
+            } catch (error) {
+                console.error(error);
+
+                if (error.message === "SIN_INTERNET") {
+                    estado.textContent = "No tienes conexion a Internet.";
+                } else if (error.message === "LIMITE_API") {
+                    estado.textContent = "Se ha alcanzado el limite de busquedas. Espera un minuto y vuelve a intentarlo.";
+                } else if (error.message === "SERVIDOR_API") {
+                    estado.textContent = "El servidor de cartas no responde. Intentalo dentro de unos segundos.";
+                } else if (error.name === "AbortError") {
+                    estado.textContent = "La busqueda ha tardado demasiado. Intentalo otra vez.";
+                } else {
+                    estado.textContent = "No se pudo completar la busqueda. Intentalo de nuevo.";
+                }
+            } finally {
+                buscando = false;
+                botonBuscar.disabled = false;
+                aplicarFiltros.disabled = false;
+                limpiarFiltros.disabled = false;
+            }
+        }
+
+        async function obtenerConReintentos(url, intentos = 5) {
+            let ultimoError;
+
+            for (let intento = 1; intento <= intentos; intento++) {
+                const controller = new AbortController();
+
+                const temporizador = setTimeout(function () {
+                    controller.abort();
+                }, 15000);
+
+                try {
+                    estado.innerHTML =
+                        '<span class="cargador"></span> ' +
+                        `Cargando cartas... Intento ${intento} de ${intentos}`;
+
+                    const respuesta = await fetch(url, {
+                        signal: controller.signal,
+                        headers: {
+                            "Accept": "application/json"
+                        }
+                    });
+
+                    clearTimeout(temporizador);
+
+                    if (respuesta.status === 429) {
+                        throw new Error("LIMITE_API");
+                    }
+
+                    if (respuesta.status >= 500) {
+                        throw new Error("SERVIDOR_API");
+                    }
+
+                    if (!respuesta.ok) {
+                        throw new Error(`ERROR_HTTP_${respuesta.status}`);
+                    }
+
+                    return respuesta;
+                } catch (error) {
+                    clearTimeout(temporizador);
+                    ultimoError = error;
+
+                    if (!navigator.onLine) {
+                        throw new Error("SIN_INTERNET");
+                    }
+
+                    if (error.message.startsWith("ERROR_HTTP_")) {
+                        throw error;
+                    }
+
+                    if (intento < intentos) {
+                        const espera = Math.min(
+                            1000 * Math.pow(2, intento - 1),
+                            8000
+                        );
+
+                        estado.innerHTML =
+                            '<span class="cargador"></span> ' +
+                            `La API esta tardando. Reintento ${intento + 1} de ${intentos}...`;
+
+                        await new Promise(function (resolve) {
+                            setTimeout(resolve, espera);
+                        });
+                    }
+                }
+            }
+
+            throw ultimoError;
+        }
+
+        function mostrarCartas() {
+            resultado.innerHTML = "";
+
+            cartasActuales.forEach(function (carta, indice) {
+                const articulo = document.createElement("article");
+                articulo.className = "carta";
+                articulo.tabIndex = 0;
+                articulo.setAttribute("role", "button");
+                articulo.setAttribute("aria-label", `Ver detalles de ${carta.name}`);
+
+                const imagen = document.createElement("img");
+                imagen.src = carta.images.small;
+                imagen.alt = `Carta ${carta.name}`;
+                imagen.loading = "lazy";
+
+                const titulo = document.createElement("h2");
+                titulo.textContent = carta.name;
+
+                const coleccion = document.createElement("p");
+                coleccion.textContent = carta.set?.name || "Coleccion no disponible";
+
+                const rareza = document.createElement("span");
+                rareza.className = "rareza";
+                rareza.textContent = carta.rarity || "Rareza no disponible";
+
+                articulo.append(imagen, titulo, coleccion, rareza);
+                articulo.addEventListener("click", () => abrirDetalle(indice));
+                articulo.addEventListener("keydown", function (evento) {
+                    if (evento.key === "Enter" || evento.key === " ") {
+                        evento.preventDefault();
+                        abrirDetalle(indice);
+                    }
+                });
+
+                resultado.appendChild(articulo);
+            });
+        }
+
+        function rellenar(id, valor) {
+            document.getElementById(id).textContent = valor || "No disponible";
+        }
+
+        function abrirDetalle(indice) {
+            const carta = cartasActuales[indice];
+            imagen3d.src = carta.images.large || carta.images.small;
+            imagen3d.alt = `Carta ${carta.name} ampliada`;
+            rellenar("modalNombre", carta.name);
+            rellenar("modalColeccion", carta.set?.name);
+            rellenar("modalFecha", carta.set?.releaseDate);
+            rellenar("modalNumero", carta.number);
+            rellenar("modalRareza", carta.rarity);
+            rellenar("modalTipo", carta.types?.join(", "));
+            rellenar("modalHp", carta.hp);
+            rellenar("modalClase", carta.subtypes?.join(", "));
+            rellenar("modalArtista", carta.artist);
+            reiniciarCarta3d();
+            modal.classList.add("visible");
+            modal.setAttribute("aria-hidden", "false");
+            document.body.classList.add("sin-scroll");
+            cerrarModal.focus();
+        }
+
+        function ocultarDetalle() {
+            modal.classList.remove("visible");
+            modal.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("sin-scroll");
+            reiniciarCarta3d();
+        }
+
+        cerrarModal.addEventListener("click", ocultarDetalle);
+        modal.addEventListener("click", evento => {
+            if (evento.target === modal) ocultarDetalle();
+        });
+        document.addEventListener("keydown", evento => {
+            if (evento.key === "Escape" && modal.classList.contains("visible")) ocultarDetalle();
+        });
+
+        function moverCarta(xCliente, yCliente) {
+            const posicion = contenedor3d.getBoundingClientRect();
+            const x = xCliente - posicion.left;
+            const y = yCliente - posicion.top;
+            const rotacionY = ((x - posicion.width / 2) / (posicion.width / 2)) * 15;
+            const rotacionX = (((posicion.height / 2) - y) / (posicion.height / 2)) * 15;
+
+            imagen3d.style.transform = `rotateX(${rotacionX}deg) rotateY(${rotacionY}deg) scale(1.04)`;
+            brillo.style.setProperty("--x", `${x}px`);
+            brillo.style.setProperty("--y", `${y}px`);
+        }
+
+        contenedor3d.addEventListener("mousemove", evento => moverCarta(evento.clientX, evento.clientY));
+        contenedor3d.addEventListener("mouseleave", reiniciarCarta3d);
+        contenedor3d.addEventListener("touchmove", function (evento) {
+            const toque = evento.touches[0];
+            if (toque) moverCarta(toque.clientX, toque.clientY);
+        }, { passive: true });
+        contenedor3d.addEventListener("touchend", reiniciarCarta3d);
+
+        function reiniciarCarta3d() {
+            imagen3d.style.transform = "rotateX(0deg) rotateY(0deg) scale(1)";
+            brillo.style.setProperty("--x", "50%");
+            brillo.style.setProperty("--y", "50%");
+        }
+    </script>
+</body>
+</html>
