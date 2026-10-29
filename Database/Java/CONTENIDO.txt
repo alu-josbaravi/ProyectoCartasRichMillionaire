@@ -1,0 +1,14 @@
+CARDTRADEDB SIN DOCKER - CONTENIDO
+
+- Backend completo Java 17 + Spring Boot.
+- Acceso a MySQL mediante JdbcClient.
+- Validacion de peticiones JSON.
+- Hash BCrypt para contrasenas.
+- Transaccion de usuario y carrito.
+- Endpoints de usuarios y productos.
+- Exportacion de las diez tablas a inserts.sql.
+- Esquema MySQL CardTradeDB.sql.
+- Datos iniciales inserts.sql.
+- Frontend aportado: index.html e Index.css.
+- Scripts Windows para instalar la base, iniciar, compilar y ejecutar JAR.
+- README con instrucciones sin Docker.

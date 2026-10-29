@@ -1,0 +1,12 @@
+com\cardtrade\dto\UsuarioRequest.class
+com\cardtrade\controller\GlobalExceptionHandler.class
+com\cardtrade\controller\ProductoController.class
+com\cardtrade\dto\ApiResponse.class
+com\cardtrade\controller\ExportacionController.class
+com\cardtrade\service\UsuarioService.class
+com\cardtrade\dto\ProductoRequest.class
+com\cardtrade\service\ProductoService.class
+com\cardtrade\CardTradeApplication.class
+com\cardtrade\controller\UsuarioController.class
+com\cardtrade\service\ExportacionService.class
+com\cardtrade\config\AppConfig.class
