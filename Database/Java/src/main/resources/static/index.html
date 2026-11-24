@@ -6,7 +6,8 @@
 
     <title>Buscador de cartas Pokemon</title>
 
-    <link rel="stylesheet" href="Frontend/CSS/Index.css">
+    <link rel="stylesheet" href="C:\Users\Usuario\Documents\GitHub\ProyectoCartasRichMillionaire\Frontend\Index.css">
+    <link rel="stylesheet" href="C:\Users\Usuario\Documents\GitHub\ProyectoCartasRichMillionaire\Frontend\tienda.css">
 </head>
 
 <body>
@@ -180,8 +181,127 @@
                     <strong>Artista:</strong>
                     <span id="modalArtista"></span>
                 </p>
+
+                <div id="zonaTienda" class="zona-tienda"></div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- ===== Tienda: barra inferior con sesion y carrito ===== -->
+    <div class="barra-usuario" id="barraUsuario">
+        <div id="zonaSesion"></div>
+        <button type="button" id="botonCarrito">
+            Carrito <span id="contadorCarrito">0</span>
+        </button>
+    </div>
+
+    <div id="aviso" role="status" aria-live="polite"></div>
+
+    <!-- ===== Tienda: iniciar sesion / registro ===== -->
+    <div id="modalAuth" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="tituloAuth">
+        <div class="modal-simple">
+            <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">x</button>
+            <h2 id="tituloAuth">Tu cuenta</h2>
+
+            <div class="pestanas">
+                <button type="button" id="pestanaLogin" class="activa">Entrar</button>
+                <button type="button" id="pestanaRegistro">Crear cuenta</button>
+            </div>
+
+            <form id="formLogin" class="formulario">
+                <label>Usuario o email
+                    <input id="loginUsuario" type="text" autocomplete="username" required>
+                </label>
+                <label>Contraseña
+                    <input id="loginPassword" type="password" autocomplete="current-password" required>
+                </label>
+                <button type="submit">Entrar</button>
+            </form>
+
+            <form id="formRegistro" class="formulario" hidden>
+                <label>Usuario
+                    <input id="regUsuario" type="text" maxlength="50" autocomplete="username" required>
+                </label>
+                <label>Email
+                    <input id="regEmail" type="email" maxlength="120" autocomplete="email" required>
+                </label>
+                <label>Teléfono (opcional)
+                    <input id="regTelefono" type="tel" maxlength="20" autocomplete="tel">
+                </label>
+                <label>Contraseña (mínimo 8 caracteres)
+                    <input id="regPassword" type="password" minlength="8" maxlength="100" autocomplete="new-password" required>
+                </label>
+                <button type="submit">Crear cuenta</button>
+            </form>
+
+            <p id="errorAuth" class="mensaje-error" role="alert"></p>
+        </div>
+    </div>
+
+    <!-- ===== Tienda: carrito y datos de envio ===== -->
+    <div id="modalCarrito" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="tituloCarrito">
+        <div class="modal-simple ancho">
+            <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">x</button>
+            <h2 id="tituloCarrito">Tu carrito</h2>
+
+            <div id="listaCarrito"></div>
+            <div id="resumenCarrito" class="resumen"></div>
+
+            <form id="formPedido" class="formulario" hidden>
+                <h3>Datos de envío</h3>
+                <label>Nombre del destinatario
+                    <input name="nombreDestinatario" type="text" maxlength="120" autocomplete="name" required>
+                </label>
+                <div class="fila">
+                    <label>Calle
+                        <input name="calle" type="text" maxlength="150" autocomplete="address-line1" required>
+                    </label>
+                    <label>Número
+                        <input name="numero" type="text" maxlength="20" required>
+                    </label>
+                </div>
+                <div class="fila">
+                    <label>Piso (opcional)
+                        <input name="piso" type="text" maxlength="20">
+                    </label>
+                    <label>Código postal
+                        <input name="codigoPostal" type="text" maxlength="12" autocomplete="postal-code" required>
+                    </label>
+                </div>
+                <div class="fila">
+                    <label>Ciudad
+                        <input name="ciudad" type="text" maxlength="80" autocomplete="address-level2" required>
+                    </label>
+                    <label>Provincia
+                        <input name="provincia" type="text" maxlength="80" autocomplete="address-level1" required>
+                    </label>
+                </div>
+                <div class="fila">
+                    <label>País
+                        <input name="pais" type="text" maxlength="80" value="España" autocomplete="country-name" required>
+                    </label>
+                    <label>Método de pago
+                        <select name="metodoPago">
+                            <option value="TARJETA">Tarjeta</option>
+                            <option value="PAYPAL">PayPal</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                    </label>
+                </div>
+                <button type="submit">Realizar pedido</button>
+            </form>
+
+            <p id="mensajeCarrito" class="mensaje-error" role="alert"></p>
+        </div>
+    </div>
+
+    <!-- ===== Tienda: historial de pedidos ===== -->
+    <div id="modalPedidos" class="modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="tituloPedidos">
+        <div class="modal-simple ancho">
+            <button type="button" class="cerrar" data-cerrar aria-label="Cerrar">x</button>
+            <h2 id="tituloPedidos">Mis pedidos</h2>
+            <div id="listaPedidos"></div>
         </div>
     </div>
 
@@ -349,7 +469,8 @@
                     partes.push('-subtypes:"TAG TEAM"');
                     break;
 
-                casesh("subtypes:GX");
+                case "gx":
+                    partes.push("subtypes:GX");
                     partes.push('-subtypes:"TAG TEAM"');
                     break;
 
@@ -841,5 +962,6 @@
         }
     </script>
 
+    <script src="C:\Users\Usuario\Documents\GitHub\ProyectoCartasRichMillionaire\Frontend\tienda.js"></script>
 </body>
 </html>
