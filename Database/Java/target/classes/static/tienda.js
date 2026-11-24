@@ -9,7 +9,8 @@
 (function () {
     "use strict";
 
-    const API = "/api";
+    // Abierto con doble clic (file://) no hay servidor propio: se usa el backend en localhost:8080
+    const API = location.protocol === "file:" ? "http://localhost:8080/api" : "/api";
     const API_CARTAS = "https://api.pokemontcg.io/v2/cards";
     const CLAVE_SESION = "cardtrade_usuario";
 
