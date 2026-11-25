@@ -21,6 +21,7 @@ TRUNCATE TABLE Usuario;
 SET FOREIGN_KEY_CHECKS = 1;
 
 
+
 -- =====================================================
 -- INICIAR TRANSACCIÓN
 -- =====================================================
@@ -70,6 +71,15 @@ INSERT INTO Usuario (
           '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi',
           '2026-10-03 17:15:00',
           'CLIENTE'
+      ),
+      (
+          4,
+          'foc',
+          'foc@tiendacartas.es',
+          '600000005',
+          'foc',
+          '2026-10-01 10:00:00',
+          'ADMINISTRADOR'
       );
 
 
@@ -650,3 +660,5 @@ SELECT * FROM DetallePedido;
 SELECT * FROM Pago;
 SELECT * FROM Favorito;
 SELECT * FROM Incidencia;
+
+SELECT id, usuario, rol, LEFT(password, 7) FROM tienda_cartas.Usuario;

@@ -1,5 +1,6 @@
 @echo off
 setlocal
+
 cd /d "%~dp0"
 title CardTradeDB - Instalar base de datos
 
@@ -9,15 +10,19 @@ echo ============================================
 echo.
 
 set "MYSQL_EXE="
+
+rem Buscar mysql en el PATH
 where mysql >nul 2>&1
 if not errorlevel 1 set "MYSQL_EXE=mysql"
 
+rem Buscar instalaciones conocidas
+if not defined MYSQL_EXE if exist "C:\xampp\mysql\bin\mysql.exe" set "MYSQL_EXE=C:\xampp\mysql\bin\mysql.exe"
 if not defined MYSQL_EXE if exist "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" set "MYSQL_EXE=C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe"
 if not defined MYSQL_EXE if exist "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" set "MYSQL_EXE=C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"
 
 if not defined MYSQL_EXE (
     echo [ERROR] No se encuentra mysql.exe.
-    echo Instala MySQL Server o anade su carpeta bin al PATH.
+    echo Instala MySQL Server o añade su carpeta bin al PATH.
     pause
     exit /b 1
 )
@@ -35,8 +40,9 @@ if not exist "database\inserts.sql" (
 )
 
 echo [1/2] Creando la base de datos y las tablas.
-echo Introduce la contrasena del usuario root de MySQL.
+echo Introduce la contraseña del usuario root de MySQL.
 "%MYSQL_EXE%" -u root -p < "database\CardTradeDB.sql"
+
 if errorlevel 1 (
     echo [ERROR] No se pudo crear la base de datos.
     pause
@@ -45,8 +51,9 @@ if errorlevel 1 (
 
 echo.
 echo [2/2] Cargando los datos iniciales.
-echo Introduce de nuevo la contrasena del usuario root de MySQL.
+echo Introduce de nuevo la contraseña del usuario root de MySQL.
 "%MYSQL_EXE%" -u root -p tienda_cartas < "database\inserts.sql"
+
 if errorlevel 1 (
     echo [ERROR] No se pudieron cargar los datos iniciales.
     pause
