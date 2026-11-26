@@ -61,6 +61,23 @@
   </dependencies>
 
   <build>
+
+    <!-- UNA sola copia del frontend: la carpeta Frontend/ de la raiz del proyecto.
+         Se incluye en el JAR como static/. Ya no hay que copiar archivos a src/main/resources/static. -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>static/**</exclude>
+          <exclude>static.zip</exclude>
+        </excludes>
+      </resource>
+      <resource>
+        <directory>${project.basedir}/../../Frontend</directory>
+        <targetPath>static</targetPath>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

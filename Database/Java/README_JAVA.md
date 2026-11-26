@@ -750,3 +750,13 @@ Actualmente funcionan:
 - Frontend servido desde Spring Boot.
 
 El siguiente paso principal es conectar los formularios y las acciones del frontend con los endpoints propios del backend.
+
+---
+
+## ACTUALIZACION: autenticacion, panel de administracion y frontend unico
+
+- El frontend vive solo en `Frontend/` (ya no se copia a `src/main/resources/static`); el `pom.xml` lo incluye en el JAR. Los SQL viven solo en `Database/`.
+- Nuevos endpoints: `/api/auth/login|logout`, `/api/carrito/**`, `/api/favoritos/**`, `/api/pedidos/**`, `/api/productos/disponibles`, `/api/admin/tablas` y `/api/admin/tablas/{nombre}`.
+- Nuevas clases: `AuthInterceptor` + `WebConfig` (sesion y permisos), `SesionService`, `AdminInicial` (cuenta `foc`), `AdminService/AdminController`, `ApiException`.
+- Cuenta de desarrollo `foc` / `foc` y resto de detalles: ver el `README.md` de la raiz.
+- Scripts: `iniciar.bat`, `detener.bat`, `instalar_base_datos.bat`, `probar_api.bat`.
