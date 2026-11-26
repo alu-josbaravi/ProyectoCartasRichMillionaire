@@ -18,7 +18,7 @@
 
     const ETIQ_ESTADO = {
         NUEVA: "Nueva", EXCELENTE: "Excelente", BUENA: "Buena",
-        ACEPTABLE: "Aceptable", DANADA: "Dañada"
+        JUGADA: "Jugada", DETERIORADA: "Deteriorada"
     };
     const ETIQ_ACABADO = { NORMAL: "Normal", HOLO: "Holo", REVERSE_HOLO: "Reverse holo" };
     const IDIOMAS = ["es", "en", "fr", "de", "it", "pt", "ja"];
@@ -71,16 +71,21 @@
     async function api(ruta, opciones = {}) {
         let respuesta;
         try {
-            respuesta = await fetch(API + ruta, {
-                headers: { "Content-Type": "application/json" },
-                ...opciones
-            });
+            const cabeceras = { "Content-Type": "application/json" };
+            if (usuario && usuario.token) cabeceras.Authorization = "Bearer " + usuario.token;
+            respuesta = await fetch(API + ruta, { ...opciones, headers: cabeceras });
         } catch (_) {
             throw new Error("No se puede conectar con el servidor. Comprueba que el backend está arrancado.");
         }
 
         let cuerpo = null;
         try { cuerpo = await respuesta.json(); } catch (_) { /* sin JSON */ }
+
+        // Token caducado o servidor reiniciado: se cierra la sesion local
+        if (respuesta.status === 401 && usuario && ruta !== "/auth/login") {
+            sesionCaducada();
+            throw new Error("Tu sesión ha caducado. Inicia sesión de nuevo.");
+        }
 
         if (!respuesta.ok || (cuerpo && cuerpo.correcto === false)) {
             throw new Error((cuerpo && cuerpo.mensaje) || `Error HTTP ${respuesta.status}`);
@@ -179,6 +184,9 @@
                 el("span", { class: "saludo", text: `Hola, ${usuario.usuario}${admin}` }),
                 el("button", { type: "button", class: "boton-secundario", text: "Favoritos", onclick: verFavoritos }),
                 el("button", { type: "button", class: "boton-secundario", text: "Mis pedidos", onclick: abrirPedidos }),
+                usuario.rol === "ADMINISTRADOR"
+                    ? el("button", { type: "button", class: "boton-secundario", text: "Panel admin", onclick: () => { location.href = "admin.html"; } })
+                    : null,
                 el("button", { type: "button", class: "boton-secundario", text: "Salir", onclick: cerrarSesion })
             );
         } else {
@@ -224,7 +232,21 @@
         renderBarra();
     }
 
+    function sesionCaducada() {
+        usuario = null;
+        carrito = null;
+        favoritos = new Set();
+        guardarSesion();
+        renderBarra();
+        renderZonaTienda();
+    }
+
     function cerrarSesion() {
+        // Avisa al servidor para invalidar el token (si falla no pasa nada)
+        if (usuario && usuario.token) {
+            fetch(API + "/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + usuario.token } })
+                .catch(() => {});
+        }
         usuario = null;
         carrito = null;
         favoritos = new Set();

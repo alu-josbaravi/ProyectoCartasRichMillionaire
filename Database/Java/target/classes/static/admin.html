@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CardTrade - Administración</title>
+    <style>
+        :root { --fondo:#0a1c36; --panel:#112d54; --borde:rgba(255,255,255,.2); --amarillo:#ffcb05; --texto:#fff; --suave:#c9dcf5; }
+        * { box-sizing: border-box; }
+        body { margin:0; padding:24px; font-family: system-ui, "Segoe UI", Arial, sans-serif; color:var(--texto); background:linear-gradient(160deg,#0a1c36,#06101f); min-height:100vh; }
+        h1 { margin:0 0 4px; color:var(--amarillo); }
+        h2 { color:var(--amarillo); margin:0 0 12px; }
+        .sub { margin:0 0 20px; color:var(--suave); }
+        .caja { max-width:420px; padding:24px; border:1px solid var(--borde); border-radius:18px; background:var(--panel); }
+        label { display:grid; gap:6px; margin-bottom:14px; color:var(--amarillo); font-weight:700; font-size:.9rem; }
+        input { padding:10px 12px; border:0; border-radius:10px; font-size:1rem; }
+        button { padding:10px 16px; border:0; border-radius:10px; font-weight:700; cursor:pointer; color:#133d75; background:var(--amarillo); }
+        button.sec { color:#fff; background:#40628d; }
+        button.activa { outline:3px solid #fff; }
+        #error { min-height:22px; margin:12px 0 0; color:#ffb4ab; font-weight:700; }
+        .barra { display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .barra .acciones { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+        #listaTablas { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:22px; }
+        .contenedor { overflow:auto; max-height:65vh; border:1px solid var(--borde); border-radius:14px; }
+        table { border-collapse:collapse; width:100%; font-size:.88rem; }
+        th, td { padding:8px 12px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--borde); }
+        th { position:sticky; top:0; color:#133d75; background:var(--amarillo); }
+        tr:nth-child(even) td { background:rgba(255,255,255,.04); }
+        td.nulo { color:#7f93ad; }
+        .nota { color:var(--suave); }
+        [hidden] { display:none !important; }
+    </style>
+</head>
+<body>
+
+    <h1>CardTrade · Administración</h1>
+    <p class="sub">Consulta de solo lectura de las tablas de la base de datos.</p>
+
+    <!-- ===== Inicio de sesión ===== -->
+    <section id="login" class="caja" hidden>
+        <h2>Iniciar sesión</h2>
+        <form id="formLogin">
+            <label>Usuario o email
+                <input id="usuario" type="text" autocomplete="username" required>
+            </label>
+            <label>Contraseña
+                <input id="password" type="password" autocomplete="current-password" required>
+            </label>
+            <button type="submit">Entrar</button>
+        </form>
+        <p id="error" role="alert"></p>
+    </section>
+
+    <!-- ===== Panel ===== -->
+    <section id="panel" hidden>
+        <div class="barra">
+            <div id="quien" class="nota"></div>
+            <div class="acciones">
+                <button type="button" class="sec" id="botonTienda">Volver a la tienda</button>
+                <button type="button" class="sec" id="botonSalir">Salir</button>
+            </div>
+        </div>
+
+        <h2>Tablas</h2>
+        <div id="listaTablas"></div>
+
+        <h2 id="tituloTabla" hidden></h2>
+        <p id="infoTabla" class="nota" hidden></p>
+        <div id="contenedorTabla" class="contenedor" hidden>
+            <table id="tabla"></table>
+        </div>
+    </section>
+
+    <script>
+    (function () {
+        "use strict";
+
+        // Servido por Spring Boot: ruta relativa. Abierto con doble clic (file://): backend en localhost:8080
+        const API = location.protocol === "file:" ? "http://localhost:8080/api" : "/api";
+        const CLAVE_SESION = "cardtrade_usuario";   // misma clave que usa la tienda
+        const $ = (id) => document.getElementById(id);
+
+        let sesion = leerSesion();
+
+        function leerSesion() {
+            try { return JSON.parse(sessionStorage.getItem(CLAVE_SESION) || "null"); }
+            catch (_) { return null; }
+        }
+        function guardarSesion() {
+            try {
+                if (sesion) sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
+                else sessionStorage.removeItem(CLAVE_SESION);
+            } catch (_) { /* sin almacenamiento */ }
+        }
+
+        class ErrorApi extends Error {
+            constructor(mensaje, codigo) { super(mensaje); this.codigo = codigo; }
+        }
+
+        async function api(ruta, opciones = {}) {
+            const cabeceras = { "Content-Type": "application/json" };
+            if (sesion && sesion.token) cabeceras.Authorization = "Bearer " + sesion.token;
+
+            let respuesta;
+            try {
+                respuesta = await fetch(API + ruta, { ...opciones, headers: cabeceras });
+            } catch (_) {
+                throw new ErrorApi("No se puede conectar con el servidor. ¿Está el backend arrancado?", 0);
+            }
+
+            let cuerpo = null;
+            try { cuerpo = await respuesta.json(); } catch (_) { /* sin JSON */ }
+
+            if (!respuesta.ok || (cuerpo && cuerpo.correcto === false)) {
+                throw new ErrorApi((cuerpo && cuerpo.mensaje) || ("Error HTTP " + respuesta.status), respuesta.status);
+            }
+            return cuerpo ? cuerpo.datos : null;
+        }
+
+        /* ---------- Pantallas ---------- */
+        function mostrarLogin(mensaje) {
+            $("panel").hidden = true;
+            $("login").hidden = false;
+            $("error").textContent = mensaje || "";
+            $("usuario").focus();
+        }
+
+        async function mostrarPanel() {
+            $("login").hidden = true;
+            $("panel").hidden = false;
+            $("quien").textContent = "Sesión: " + sesion.usuario + " (" + sesion.rol + ")";
+            $("tituloTabla").hidden = true;
+            $("infoTabla").hidden = true;
+            $("contenedorTabla").hidden = true;
+            await cargarTablas();
+        }
+
+        function cerrarSesionLocal(mensaje) {
+            sesion = null;
+            guardarSesion();
+            mostrarLogin(mensaje);
+        }
+
+        /* ---------- Datos ---------- */
+        async function cargarTablas() {
+            const lista = $("listaTablas");
+            lista.replaceChildren();
+            try {
+                const tablas = await api("/admin/tablas");
+                if (tablas.length === 0) {
+                    lista.append(Object.assign(document.createElement("p"),
+                        { className: "nota", textContent: "No se encontró ninguna tabla. ¿Se ejecutó instalar_base_datos.bat?" }));
+                    return;
+                }
+                tablas.forEach((t) => {
+                    const boton = document.createElement("button");
+                    boton.type = "button";
+                    boton.className = "sec";
+                    boton.textContent = t.nombre + " (" + t.filas + ")";
+                    boton.addEventListener("click", () => {
+                        lista.querySelectorAll("button").forEach((b) => b.classList.remove("activa"));
+                        boton.classList.add("activa");
+                        verTabla(t.nombre);
+                    });
+                    lista.append(boton);
+                });
+            } catch (e) {
+                if (e.codigo === 401) cerrarSesionLocal("La sesión ha caducado. Inicia sesión de nuevo.");
+                else if (e.codigo === 403) cerrarSesionLocal("Esta cuenta no es administradora.");
+                else lista.append(Object.assign(document.createElement("p"), { className: "nota", textContent: e.message }));
+            }
+        }
+
+        async function verTabla(nombre) {
+            try {
+                const d = await api("/admin/tablas/" + encodeURIComponent(nombre) + "?limite=100");
+
+                $("tituloTabla").textContent = d.nombre;
+                $("tituloTabla").hidden = false;
+                $("infoTabla").textContent = "Mostrando " + d.filas.length + " de " + d.total
+                    + " filas (máximo " + d.limite + "). Las contraseñas no se muestran.";
+                $("infoTabla").hidden = false;
+
+                const tabla = $("tabla");
+                tabla.replaceChildren();
+
+                const cabecera = document.createElement("tr");
+                d.columnas.forEach((c) => {
+                    const th = document.createElement("th");
+                    th.textContent = c;
+                    cabecera.append(th);
+                });
+                tabla.append(cabecera);
+
+                d.filas.forEach((fila) => {
+                    const tr = document.createElement("tr");
+                    d.columnas.forEach((c) => {
+                        const td = document.createElement("td");
+                        const clave = Object.keys(fila).find((k) => k.toLowerCase() === c.toLowerCase());
+                        const valor = clave === undefined ? null : fila[clave];
+                        if (valor === null || valor === undefined) {
+                            td.textContent = "—";
+                            td.className = "nulo";
+                        } else {
+                            td.textContent = String(valor);
+                        }
+                        tr.append(td);
+                    });
+                    tabla.append(tr);
+                });
+                $("contenedorTabla").hidden = false;
+            } catch (e) {
+                if (e.codigo === 401) cerrarSesionLocal("La sesión ha caducado. Inicia sesión de nuevo.");
+                else {
+                    $("infoTabla").textContent = e.message;
+                    $("infoTabla").hidden = false;
+                }
+            }
+        }
+
+        /* ---------- Eventos ---------- */
+        $("formLogin").addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            $("error").textContent = "";
+            try {
+                sesion = null;   // no enviar un token antiguo en el login
+                const datos = await api("/auth/login", {
+                    method: "POST",
+                    body: JSON.stringify({ usuario: $("usuario").value.trim(), password: $("password").value })
+                });
+                if (datos.rol !== "ADMINISTRADOR") {
+                    sesion = datos;
+                    await api("/auth/logout", { method: "POST" }).catch(() => {});
+                    sesion = null;
+                    mostrarLogin("Esta cuenta no es administradora.");
+                    return;
+                }
+                sesion = datos;
+                guardarSesion();
+                ev.target.reset();
+                await mostrarPanel();
+            } catch (e) {
+                mostrarLogin(e.message);
+            }
+        });
+
+        $("botonSalir").addEventListener("click", async () => {
+            try { await api("/auth/logout", { method: "POST" }); } catch (_) { /* da igual */ }
+            cerrarSesionLocal("");
+        });
+
+        $("botonTienda").addEventListener("click", () => { location.href = "index.html"; });
+
+        /* ---------- Inicio ---------- */
+        if (sesion && sesion.token && sesion.rol === "ADMINISTRADOR") {
+            mostrarPanel();
+        } else {
+            mostrarLogin(sesion && sesion.token ? "Inicia sesión con una cuenta administradora." : "");
+        }
+    })();
+    </script>
+</body>
+</html>

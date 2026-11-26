@@ -88,8 +88,9 @@ public class PedidoService {
 
         jdbc.sql("""
                 INSERT INTO Pedido
-                (comprador_id, nombre_destinatario, calle, numero, piso, ciudad, provincia,
-                 codigo_postal, pais, subtotal, gastos_envio, total)
+                (comprador_id, nombre_destinatario, calle_envio, numero_envio, piso_envio,
+                 ciudad_envio, provincia_envio, codigo_postal_envio, pais_envio,
+                 subtotal, gastos_envio, total)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """)
                 .params(
@@ -133,8 +134,8 @@ public class PedidoService {
                             pedidoId,
                             productoId,
                             cartaId,
-                            cortar(nombre, 150),
-                            datos == null ? null : cortar(datos.set(), 150),
+                            cortar(nombre, 255),
+                            datos == null ? null : cortar(datos.set(), 255),
                             datos == null ? null : cortar(datos.numero(), 30),
                             it.get("idioma"),
                             it.get("estado_carta").toString(),

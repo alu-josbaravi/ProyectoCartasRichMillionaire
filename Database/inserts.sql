@@ -21,7 +21,6 @@ TRUNCATE TABLE Usuario;
 SET FOREIGN_KEY_CHECKS = 1;
 
 
-
 -- =====================================================
 -- INICIAR TRANSACCIÓN
 -- =====================================================
@@ -50,7 +49,7 @@ INSERT INTO Usuario (
           'admin',
           'admin@tiendacartas.es',
           '600000001',
-          '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi',
+          '$2a$10$vhEsZEAeeRxzKAksBUt2WemtFt3nhGQ50sMZR3J9rbYVNvycWsLLq',
           '2026-10-01 10:00:00',
           'ADMINISTRADOR'
       ),
@@ -59,7 +58,7 @@ INSERT INTO Usuario (
           'alejandro',
           'alejandro@example.com',
           '600000002',
-          '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi',
+          '$2a$10$vhEsZEAeeRxzKAksBUt2WemtFt3nhGQ50sMZR3J9rbYVNvycWsLLq',
           '2026-10-02 12:30:00',
           'CLIENTE'
       ),
@@ -68,18 +67,9 @@ INSERT INTO Usuario (
           'lucia',
           'lucia@example.com',
           '600000003',
-          '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi',
+          '$2a$10$vhEsZEAeeRxzKAksBUt2WemtFt3nhGQ50sMZR3J9rbYVNvycWsLLq',
           '2026-10-03 17:15:00',
           'CLIENTE'
-      ),
-      (
-          4,
-          'foc',
-          'foc@tiendacartas.es',
-          '600000005',
-          'foc',
-          '2026-10-01 10:00:00',
-          'ADMINISTRADOR'
       );
 
 
@@ -660,5 +650,3 @@ SELECT * FROM DetallePedido;
 SELECT * FROM Pago;
 SELECT * FROM Favorito;
 SELECT * FROM Incidencia;
-
-SELECT id, usuario, rol, LEFT(password, 7) FROM tienda_cartas.Usuario;
